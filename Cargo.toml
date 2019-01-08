@@ -1,0 +1,8 @@
+[package]
+name = "snake"
+version = "0.1.0"
+authors = ["Alexandra Orth <alexandra.orth@oliverwyman.com>"]
+edition = "2018"
+
+[dependencies]
+termion = "1"
