@@ -16,11 +16,10 @@ pub struct Segment {
 
 pub struct Snake {
     pub body: VecDeque<(Segment)>,
-    pub direction: Direction
+    pub direction: Direction //Remove direction from here, move into Segment head
 }
 
 impl Segment {
-
     pub fn is_vertical(&self) -> bool {
         (self.direction == Direction::UP ) | (self.direction == Direction::DOWN)
     }
@@ -59,5 +58,48 @@ impl Snake {
             Direction::RIGHT  => self.body.push_back(Segment{x: tail.x - 1, y: tail.y, direction: Direction::RIGHT}),
             Direction::LEFT   => self.body.push_back(Segment{x: tail.x + 1, y: tail.y, direction: Direction::LEFT}),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn snake_created_has_size_2(){
+        let snake = Snake::new();
+
+        assert_eq!(snake.body.len(), 2)
+    }
+
+    #[test]
+    fn growing_snake_has_increased_size(){
+        let mut snake = Snake::new();
+
+        snake.grow();
+
+        assert_eq!(snake.body.len(), 3)
+    }
+
+    #[test]
+    fn crawling_snake_has_same_size(){
+        let mut snake = Snake::new();
+
+        snake.crawl();
+
+        assert_eq!(snake.body.len(), 2)
+    }
+
+    #[test]
+    fn crawling_snake_has_moved(){
+        let mut snake = Snake::new();
+
+        assert_eq!(2, snake.body.front().unwrap().x);
+        assert_eq!(1, snake.body.front().unwrap().y);
+
+        snake.crawl();
+
+        assert_eq!(3, snake.body.front().unwrap().x);
+        assert_eq!(1, snake.body.front().unwrap().y);
     }
 }

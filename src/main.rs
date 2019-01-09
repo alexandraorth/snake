@@ -7,34 +7,50 @@ use termion::raw::IntoRawMode;
 use std::{thread, time};
 use std::io::{Write, Read, stdout};
 
-mod board;
 mod snake;
 
 const SLEEP_MS: time::Duration = time::Duration::from_millis(1000);
 
+//TODO Sort out passing things around
+//TODO Snake should die when it hits itself
+//TODO Snake should eat things and grow
+//TODO Snake should speed up when it eats
+//TODO Scoring
+//TODO Make pretty
+//TODO Host on web
+//TODO Clean up code
+//TODO Quit when hitting "Q" char
+
 struct Game {
     score: u8,
-    direction: snake::Direction
+    snake: snake::Snake,
+    width: u16,
+    height: u16,
 }
 
 fn main() {
-    let mut snake = snake::Snake::new();
+    let mut game = Game {
+        score: 0,
+        snake: snake::Snake::new(),
+        width: 20,
+        height: 20,
+    };
 
     let stdout = stdout(); // Needs to be separate to be bound to the scope
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
     let mut stdin =  async_stdin();
 
-    redraw(&mut stdout, &snake);
+    redraw(&mut stdout, &game);
 
     loop {
-        snake.crawl();
+        game.snake.crawl();
 
-        update_direction(&mut stdin, &mut snake);
+        update_direction(&mut stdin, &mut game.snake);
 
-        if game_over(&snake){
+        if game_over(&game){
             break
         } else {
-            redraw(&mut stdout, &snake);
+            redraw(&mut stdout, &game);
         }
 
         thread::sleep(SLEEP_MS)
@@ -53,22 +69,22 @@ fn update_direction(stdin: &mut Read, snake: &mut snake::Snake){
     }
 }
 
-fn game_over(snake: &snake::Snake) -> bool {
-    let head = snake.body.front().unwrap();
+fn game_over(game: &Game) -> bool {
+    let head = game.snake.body.front().unwrap();
 
     //TODO Check for hitting itself
-    head.x == 0|| head.y == 0 || head.x == board::Board::WIDTH - 1 || head.y == board::Board::HEIGHT - 1
+    head.x == 0|| head.y == 0 || head.x == game.width - 1 || head.y == game.height - 1
 }
 
-fn redraw(stdout: &mut Write, snake: &snake::Snake){
+fn redraw(stdout: &mut Write, game: &Game){
     clear_board(stdout);
-    draw_borders(stdout);
-    draw_snake(snake, stdout);
-    flush(stdout);
+    draw_borders(stdout, game);
+    draw_snake(&game.snake, stdout);
+    flush(stdout, &game);
 }
 
-fn flush(stdout: &mut Write){
-    write!(stdout, "{}", termion::cursor::Goto(board::Board::WIDTH, board::Board::HEIGHT)).unwrap();
+fn flush(stdout: &mut Write, game: &Game){
+    write!(stdout, "{}", termion::cursor::Goto(game.width, game.height)).unwrap();
     stdout.flush().unwrap();
 }
 
@@ -99,14 +115,14 @@ fn draw_snake(snake: &snake::Snake, stdout: &mut Write) {
 //    write!(stdout, "{}{}", termion::cursor::Goto(head.x + 1, head.y + 1), symbol).unwrap();
 //}
 
-fn draw_borders(stdout: &mut Write) {
-    for y in 2..board::Board::HEIGHT {
+fn draw_borders(stdout: &mut Write, game: &Game) {
+    for y in 2..game.height {
         write!(stdout, "{}{}", termion::cursor::Goto(0, y as u16), "0").unwrap();
-        write!(stdout, "{}{}", termion::cursor::Goto(board::Board::WIDTH, y as u16), "0").unwrap();
+        write!(stdout, "{}{}", termion::cursor::Goto(game.width, y as u16), "0").unwrap();
     }
 
-    for x in 2..board::Board::WIDTH {
+    for x in 2..game.width {
         write!(stdout, "{}{}", termion::cursor::Goto(x as u16, 0), "0").unwrap();
-        write!(stdout, "{}{}", termion::cursor::Goto(x as u16, board::Board::HEIGHT), "0").unwrap();
+        write!(stdout, "{}{}", termion::cursor::Goto(x as u16, game.height), "0").unwrap();
     }
 }
