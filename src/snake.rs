@@ -34,7 +34,7 @@ impl Snake {
         snake
     }
 
-    pub fn move_dir(&mut self, direction: Direction) {
+    pub fn move_dir(&mut self, direction: &Direction) {
         let head = self.body.front().unwrap(); //TODO dont use unwrap
 
         match direction {

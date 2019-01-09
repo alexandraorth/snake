@@ -1,10 +1,11 @@
 extern crate termion;
 
+use termion::async_stdin;
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use std::{thread, time};
-use std::io::{Write, stdout, stdin};
+use std::io::{Write, Read, stdout};
 
 mod board;
 mod snake;
@@ -12,53 +13,49 @@ mod snake;
 const SLEEP_MS: time::Duration = time::Duration::from_millis(1000);
 
 struct Game {
-    score: u8
+    score: u8,
+    direction: snake::Direction
 }
 
 fn main() {
+    let mut game = Game{score: 0, direction: snake::Direction::RIGHT};
     let mut snake = snake::Snake::new();
 
-    let stdoutold = stdout(); // Needs to be separate to be bound to the scope
-
-    let mut stdin =  stdin();
-    let mut stdout = stdoutold.lock().into_raw_mode().unwrap();
+    let stdout = stdout(); // Needs to be separate to be bound to the scope
+    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+    let mut stdin =  async_stdin();
 
     redraw(&mut stdout, &snake);
 
-    for c in stdin.keys() {
+    loop {
+        snake.move_dir(&game.direction);
 
-        // Clear the current line.
-        write!(stdout, "{}{}", termion::cursor::Goto(1, 1), termion::clear::CurrentLine).unwrap();
-
-        // TODO Handle other keys
-        match c.unwrap() {
-            // Exit.
-            Key::Char('q') => break,
-            Key::Left      => snake.move_dir(snake::Direction::LEFT),
-            Key::Right     => snake.move_dir(snake::Direction::RIGHT),
-            Key::Up        => snake.move_dir(snake::Direction::UP),
-            Key::Down      => snake.move_dir(snake::Direction::DOWN),
-            _              => println!("Other"),
-        }
+        update_direction(&mut stdin, &mut game);
 
         if game_over(&snake){
             break
+        } else {
+            redraw(&mut stdout, &snake);
         }
 
-        redraw(&mut stdout, &snake);
+        thread::sleep(SLEEP_MS)
     }
-//
-//    loop {
-//        snake.move_dir(snake::Direction::RIGHT);
-//
-//        redraw(&mut stdout, &snake);
-//
-//        thread::sleep(SLEEP_MS)
-//    }
+}
+
+fn update_direction(stdin: &mut Read, game: &mut Game){
+    if let Some(Ok(c)) = stdin.keys().last() {
+        match c {
+            Key::Left => game.direction = snake::Direction::LEFT,
+            Key::Right => game.direction = snake::Direction::RIGHT,
+            Key::Up => game.direction = snake::Direction::UP,
+            Key::Down => game.direction = snake::Direction::DOWN,
+            _ => (), //TODO Handle other keys
+        }
+    }
 }
 
 fn game_over(snake: &snake::Snake) -> bool {
-    let head = snake.body.get(0).unwrap();
+    let head = snake.body.front().unwrap();
 
     //TODO Check for hitting itself
     head.x == 0|| head.y == 0 || head.x == board::Board::WIDTH - 1 || head.y == board::Board::HEIGHT - 1
@@ -78,27 +75,30 @@ fn flush(stdout: &mut Write){
 
 fn clear_board(stdout: &mut Write) {
     write!(stdout, "{}{}{}",
-           // Clear the screen.
            termion::clear::All,
-           // Goto (1,1).
            termion::cursor::Goto(1, 1),
-           // Hide the cursor.
            termion::cursor::Hide).unwrap();
 }
 
-//TODO: Only draw the updates
 fn draw_snake(snake: &snake::Snake, stdout: &mut Write) {
     for (_, segment) in snake.body.iter().enumerate(){
+        let symbol = if segment.is_vertical() { "|" } else { "-" };
 
-        write!(stdout, "{}", termion::cursor::Goto(segment.x + 1, segment.y + 1)).unwrap();
-
-        if segment.is_vertical() {
-            write!(stdout, "{}", "|").unwrap()
-        } else {
-            write!(stdout, "{}", "-").unwrap()
-        }
+        write!(stdout, "{}{}", termion::cursor::Goto(segment.x + 1, segment.y + 1), symbol).unwrap();
     }
 }
+//
+//fn draw_snake_update(snake: &snake::Snake, stdout: &mut Write) {
+//    // To only draw the updates: remove the tail, draw the head
+//
+//    let head = snake.body.front().unwrap();
+//    let tail = snake.body.back().unwrap();
+//
+//    let symbol = if head.is_vertical() { "|" } else { "-" };
+//
+//    write!(stdout, "{}{}", termion::cursor::Goto(tail.x + 1, tail.y + 1), " ").unwrap();
+//    write!(stdout, "{}{}", termion::cursor::Goto(head.x + 1, head.y + 1), symbol).unwrap();
+//}
 
 fn draw_borders(stdout: &mut Write) {
     for y in 2..board::Board::HEIGHT {
