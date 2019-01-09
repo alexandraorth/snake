@@ -34,6 +34,7 @@ impl Snake {
         snake
     }
 
+    //TODO Swap head when reserving direction
     pub fn crawl(&mut self) {
         let head = self.body.front().unwrap(); //TODO dont use unwrap
 

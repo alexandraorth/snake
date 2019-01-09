@@ -1,16 +1,16 @@
 extern crate termion;
+extern crate rand;
 
 use termion::async_stdin;
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+use rand::Rng;
 use std::{thread, time};
 use std::io::{Write, Read, stdout};
 use std::time::{Duration, Instant};
 
 mod snake;
-
-const SLEEP_MS: time::Duration = time::Duration::from_millis(1000);
 
 //TODO Sort out passing things around
 //TODO Snake should die when it hits itself
@@ -21,20 +21,42 @@ const SLEEP_MS: time::Duration = time::Duration::from_millis(1000);
 //TODO Host on web
 //TODO Clean up code
 //TODO Quit when hitting "Q" char
+//TODO Sort out where to have a +1 and where not
+//TODO Snake should be able to reverse
+//TODO Make a "position" trait?
+//TODO Turning quickly?
+
+struct Fruit {
+    x: u16,
+    y: u16,
+}
+
+impl Fruit {
+
+    //Generate a bit of Fruit within the given constraints
+    fn generate(width: u16, height: u16) -> Fruit{
+        //TODO Remove this declaration from here
+        let mut rng = rand::thread_rng();
+
+        Fruit{x: rng.gen_range(2, width), y: rng.gen_range(2, height)}
+    }
+}
 
 struct Game {
-    score: u8,
+    speed: Duration,
     snake: snake::Snake,
+    fruit: Fruit,
     width: u16,
     height: u16,
 }
 
 fn main() {
     let mut game = Game {
-        score: 0,
+        speed: Duration::from_millis(1000),
         snake: snake::Snake::new(),
         width: 20,
         height: 20,
+        fruit: Fruit::generate(20, 20), //TODO Use above width and height
     };
 
     let stdout = stdout(); // Needs to be separate to be bound to the scope
@@ -45,7 +67,7 @@ fn main() {
 
     let mut last_loop = Instant::now();
     loop {
-        if last_loop.elapsed() < SLEEP_MS {
+        if last_loop.elapsed() < game.speed {
             continue
         } else {
             last_loop = Instant::now()
@@ -54,6 +76,12 @@ fn main() {
         update_direction(&mut stdin, &mut game.snake);
 
         game.snake.crawl();
+
+        if snake_eat_fruit(&game) {
+            game.snake.grow();
+            game.fruit = Fruit::generate(game.width, game.height);
+            game.speed = game.speed.checked_sub(Duration::from_millis(100)).unwrap();
+        }
 
         if game_over(&game){
             break
@@ -75,6 +103,12 @@ fn update_direction(stdin: &mut Read, snake: &mut snake::Snake){
     }
 }
 
+fn snake_eat_fruit(game: &Game) -> bool {
+    let head = game.snake.body.front().unwrap();
+
+    head.x == game.fruit.x && head.y == game.fruit.y
+}
+
 fn game_over(game: &Game) -> bool {
     let head = game.snake.body.front().unwrap();
 
@@ -86,6 +120,7 @@ fn redraw(stdout: &mut Write, game: &Game){
     clear_board(stdout);
     draw_borders(stdout, game);
     draw_snake(&game.snake, stdout);
+    draw_fruit(&game, stdout);
     flush(stdout, &game);
 }
 
@@ -100,6 +135,10 @@ fn clear_board(stdout: &mut Write) {
            termion::clear::All,
            termion::cursor::Goto(1, 1),
            termion::cursor::Hide).unwrap();
+}
+
+fn draw_fruit(game: &Game, stdout: &mut Write){
+    write!(stdout, "{}{}", termion::cursor::Goto(game.fruit.x + 1, game.fruit.y + 1), "*");
 }
 
 fn draw_snake(snake: &snake::Snake, stdout: &mut Write) {
