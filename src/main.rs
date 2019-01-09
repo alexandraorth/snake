@@ -6,6 +6,7 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use std::{thread, time};
 use std::io::{Write, Read, stdout};
+use std::time::{Duration, Instant};
 
 mod snake;
 
@@ -42,18 +43,23 @@ fn main() {
 
     redraw(&mut stdout, &game);
 
+    let mut last_loop = Instant::now();
     loop {
-        game.snake.crawl();
+        if last_loop.elapsed() < SLEEP_MS {
+            continue
+        } else {
+            last_loop = Instant::now()
+        }
 
         update_direction(&mut stdin, &mut game.snake);
+
+        game.snake.crawl();
 
         if game_over(&game){
             break
         } else {
             redraw(&mut stdout, &game);
         }
-
-        thread::sleep(SLEEP_MS)
     }
 }
 
@@ -84,6 +90,7 @@ fn redraw(stdout: &mut Write, game: &Game){
 }
 
 fn flush(stdout: &mut Write, game: &Game){
+    //TODO Figure out why we need to do to the last point before flushing
     write!(stdout, "{}", termion::cursor::Goto(game.width, game.height)).unwrap();
     stdout.flush().unwrap();
 }
