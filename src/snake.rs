@@ -15,7 +15,8 @@ pub struct Segment {
 }
 
 pub struct Snake {
-    pub body: VecDeque<(Segment)>
+    pub body: VecDeque<(Segment)>,
+    pub direction: Direction
 }
 
 impl Segment {
@@ -28,16 +29,16 @@ impl Segment {
 impl Snake {
 
     pub fn new() -> Snake {
-        let mut snake = Snake{body: VecDeque::with_capacity(10)};
+        let mut snake = Snake{body: VecDeque::with_capacity(10), direction: Direction::RIGHT};
         snake.body.push_back(Segment{x: 2, y: 1, direction: Direction::RIGHT});
         snake.body.push_back(Segment{x: 1, y: 1, direction: Direction::RIGHT});
         snake
     }
 
-    pub fn move_dir(&mut self, direction: &Direction) {
+    pub fn crawl(&mut self) {
         let head = self.body.front().unwrap(); //TODO dont use unwrap
 
-        match direction {
+        match self.direction {
             Direction::UP     => self.body.push_front(Segment{x: head.x, y: head.y - 1, direction: Direction::UP}),
             Direction::DOWN   => self.body.push_front(Segment{x: head.x, y: head.y + 1, direction: Direction::DOWN}),
             Direction::RIGHT  => self.body.push_front(Segment{x: head.x + 1, y: head.y, direction: Direction::RIGHT}),
@@ -58,6 +59,5 @@ impl Snake {
             Direction::RIGHT  => self.body.push_back(Segment{x: tail.x - 1, y: tail.y, direction: Direction::RIGHT}),
             Direction::LEFT   => self.body.push_back(Segment{x: tail.x + 1, y: tail.y, direction: Direction::LEFT}),
         }
-
     }
 }

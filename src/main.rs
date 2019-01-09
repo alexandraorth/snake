@@ -18,7 +18,6 @@ struct Game {
 }
 
 fn main() {
-    let mut game = Game{score: 0, direction: snake::Direction::RIGHT};
     let mut snake = snake::Snake::new();
 
     let stdout = stdout(); // Needs to be separate to be bound to the scope
@@ -28,9 +27,9 @@ fn main() {
     redraw(&mut stdout, &snake);
 
     loop {
-        snake.move_dir(&game.direction);
+        snake.crawl();
 
-        update_direction(&mut stdin, &mut game);
+        update_direction(&mut stdin, &mut snake);
 
         if game_over(&snake){
             break
@@ -42,13 +41,13 @@ fn main() {
     }
 }
 
-fn update_direction(stdin: &mut Read, game: &mut Game){
+fn update_direction(stdin: &mut Read, snake: &mut snake::Snake){
     if let Some(Ok(c)) = stdin.keys().last() {
         match c {
-            Key::Left => game.direction = snake::Direction::LEFT,
-            Key::Right => game.direction = snake::Direction::RIGHT,
-            Key::Up => game.direction = snake::Direction::UP,
-            Key::Down => game.direction = snake::Direction::DOWN,
+            Key::Left => snake.direction = snake::Direction::LEFT,
+            Key::Right => snake.direction = snake::Direction::RIGHT,
+            Key::Up => snake.direction = snake::Direction::UP,
+            Key::Down => snake.direction = snake::Direction::DOWN,
             _ => (), //TODO Handle other keys
         }
     }
