@@ -23,7 +23,6 @@ use self::fruit::{Fruit};
 //TODO Sort out where to have a +1 and where not (indexing)
 //TODO Snake should be able to reverse
 //TODO Make a "position" trait?
-//TODO Turning quickly?
 //TODO Snake should speed up on a curve
 
 struct Game {
@@ -32,6 +31,21 @@ struct Game {
     fruit: Fruit,
     width: u16,
     height: u16,
+}
+
+impl Game {
+
+    fn is_over(&self) -> bool {
+        let head = self.snake.body.front().unwrap();
+
+        let hit_borders = head.x == 0|| head.y == 0 || head.x == self.width - 1 || head.y == self.height - 1;
+        let hit_self = match self.snake.body.iter().skip(1).find(|&seg| head.x == seg.x && head.y == seg.y) {
+            Some(seg) => true,
+            None => false
+        };
+
+        hit_borders || hit_self
+    }
 }
 
 fn main() {
@@ -46,7 +60,7 @@ fn main() {
     let stdout = stdout(); // Needs to be separate to be bound to the scope
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
     let mut stdin =  async_stdin();
-    
+
     clear_board(&mut stdout);
     draw_borders(&mut stdout, &game);
     draw_snake(&mut stdout, &game);
@@ -64,7 +78,7 @@ fn main() {
         clear_fruit(&mut stdout, &game);
         clear_snake(&mut stdout, &game);
 
-        update_direction(&mut stdin, &mut game.snake);
+        update_direction(&mut stdin, &mut game);
 
         game.snake.crawl();
 
@@ -74,8 +88,8 @@ fn main() {
             game.speed = game.speed.checked_sub(Duration::from_millis(100)).unwrap();
         }
 
-        if game_over(&game){
-            break
+        if game.is_over() {
+            break;
         }
 
         draw_fruit(&mut stdout, &game);
@@ -85,13 +99,13 @@ fn main() {
     }
 }
 
-fn update_direction(stdin: &mut Read, snake: &mut snake::Snake){
+fn update_direction(stdin: &mut Read, game: &mut Game){
     if let Some(Ok(c)) = stdin.keys().last() {
         match c {
-            Key::Left => snake.direction = snake::Direction::LEFT,
-            Key::Right => snake.direction = snake::Direction::RIGHT,
-            Key::Up => snake.direction = snake::Direction::UP,
-            Key::Down => snake.direction = snake::Direction::DOWN,
+            Key::Left => game.snake.direction = snake::Direction::LEFT,
+            Key::Right => game.snake.direction = snake::Direction::RIGHT,
+            Key::Up => game.snake.direction = snake::Direction::UP,
+            Key::Down => game.snake.direction = snake::Direction::DOWN,
             _ => (), //TODO Handle other keys
         }
     }
@@ -101,13 +115,6 @@ fn snake_eat_fruit(game: &Game) -> bool {
     let head = game.snake.body.front().unwrap();
 
     head.x == game.fruit.x && head.y == game.fruit.y
-}
-
-fn game_over(game: &Game) -> bool {
-    let head = game.snake.body.front().unwrap();
-
-    //TODO Check for hitting itself
-    head.x == 0|| head.y == 0 || head.x == game.width - 1 || head.y == game.height - 1
 }
 
 fn flush<W: Write>(stdout: &mut W, game: &Game){
