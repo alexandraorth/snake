@@ -5,7 +5,7 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use std::io::{Write, Read, stdout};
-use std::time::{Duration, Instant};
+use std::time::{Instant};
 
 mod snake;
 mod fruit;
@@ -36,7 +36,7 @@ impl Game {
 
         let hit_borders = head.x == 0|| head.y == 0 || head.x == self.width - 1 || head.y == self.height - 1;
         let hit_self = match self.snake.body.iter().skip(1).find(|&seg| head.x == seg.x && head.y == seg.y) {
-            Some(seg) => true,
+            Some(_) => true,
             None => false
         };
 
