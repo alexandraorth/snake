@@ -14,7 +14,6 @@ mod fruit;
 use self::fruit::{Fruit};
 
 //TODO Sort out passing things around
-//TODO Snake should die when it hits itself
 //TODO Scoring
 //TODO Make pretty
 //TODO Host on web
@@ -23,10 +22,10 @@ use self::fruit::{Fruit};
 //TODO Sort out where to have a +1 and where not (indexing)
 //TODO Snake should be able to reverse
 //TODO Make a "position" trait?
-//TODO Snake should speed up on a curve
 
 struct Game {
-    speed: Duration,
+    speed: u128,
+    score: u8,
     snake: snake::Snake,
     fruit: Fruit,
     width: u16,
@@ -34,7 +33,6 @@ struct Game {
 }
 
 impl Game {
-
     fn is_over(&self) -> bool {
         let head = self.snake.body.front().unwrap();
 
@@ -50,7 +48,8 @@ impl Game {
 
 fn main() {
     let mut game = Game {
-        speed: Duration::from_millis(1000),
+        speed: 5,
+        score: 0,
         snake: snake::Snake::new(),
         width: 20,
         height: 20,
@@ -69,10 +68,12 @@ fn main() {
 
     let mut last_loop = Instant::now();
     loop {
-        if last_loop.elapsed() < game.speed {
-            continue
-        } else {
+        let desired_interval = 1000/game.speed as u32;
+        let actual_interval = last_loop.elapsed().subsec_nanos() / 1_000_000;
+        if actual_interval > desired_interval {
             last_loop = Instant::now()
+        } else {
+            continue;
         }
 
         clear_fruit(&mut stdout, &game);
@@ -85,7 +86,8 @@ fn main() {
         if snake_eat_fruit(&game) {
             game.snake.grow();
             game.fruit = Fruit::generate(game.width - 1, game.height - 1);
-            game.speed = game.speed.checked_sub(Duration::from_millis(100)).unwrap();
+            game.speed += 1;
+            game.score += 1;
         }
 
         if game.is_over() {
@@ -97,6 +99,8 @@ fn main() {
 
         flush(&mut stdout, &game);
     }
+
+    println!("{}", game.score);
 }
 
 fn update_direction(stdin: &mut Read, game: &mut Game){
@@ -139,16 +143,22 @@ fn draw_fruit<W: Write>(stdout: &mut W, game: &Game){
 }
 
 fn clear_snake<W: Write>(stdout: &mut W, game: &Game){
-    for (_, segment) in game.snake.body.iter().enumerate(){
+    for segment in game.snake.body.iter() {
         draw_at_position(stdout, segment.x, segment.y, ' ');
     }
 }
 
 fn draw_snake<W: Write>(stdout: &mut W, game: &Game) {
-    for (_, segment) in game.snake.body.iter().enumerate(){
-        let symbol = if segment.is_vertical() { '|' } else { '-' };
-
-        draw_at_position(stdout, segment.x, segment.y, symbol);
+    for segment in game.snake.body.iter() {
+        draw_at_position(
+            stdout,
+            segment.x,
+            segment.y,
+            match segment.is_vertical() {
+                true  => '|',
+                false => '-'
+            }
+        );
     }
 }
 
