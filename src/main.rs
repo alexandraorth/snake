@@ -4,20 +4,18 @@ use termion::async_stdin;
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
-use std::{thread, time};
 use std::io::{Write, Read, stdout};
 use std::time::{Duration, Instant};
 
 mod snake;
 mod fruit;
 
+use self::snake::{Snake};
 use self::fruit::{Fruit};
 
 //TODO Sort out passing things around
-//TODO Scoring
 //TODO Make pretty
 //TODO Host on web
-//TODO Clean up code
 //TODO Quit when hitting "Q" char
 //TODO Sort out where to have a +1 and where not (indexing)
 //TODO Snake should be able to reverse
@@ -26,7 +24,7 @@ use self::fruit::{Fruit};
 struct Game {
     speed: u128,
     score: u8,
-    snake: snake::Snake,
+    snake: Snake,
     fruit: Fruit,
     width: u16,
     height: u16,
@@ -50,7 +48,7 @@ fn main() {
     let mut game = Game {
         speed: 5,
         score: 0,
-        snake: snake::Snake::new(),
+        snake: Snake::new(),
         width: 20,
         height: 20,
         fruit: Fruit::generate(20, 20), //TODO Use above width and height
@@ -100,7 +98,8 @@ fn main() {
         flush(&mut stdout, &game);
     }
 
-    println!("{}", game.score);
+    flush(&mut stdout, &game);
+    println!("\n{}\n", game.score);
 }
 
 fn update_direction(stdin: &mut Read, game: &mut Game){
