@@ -16,7 +16,7 @@ pub struct Segment {
 
 pub struct Snake {
     pub body: VecDeque<(Segment)>,
-    pub direction: Direction //Remove direction from here, move into Segment head
+    pub direction: Direction //TODO Remove direction from here, move into Segment head
 }
 
 impl Segment {
