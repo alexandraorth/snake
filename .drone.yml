@@ -1,10 +1,6 @@
-
-kind: pipeline
-name: default
-
-steps:
-- name: test
-  image: rust:1.31
-  commands:
-  - cargo build
-  - cargo test
+pipeline: 
+  default:
+    image: rust:1.31
+    commands:
+    - cargo build
+    - cargo test
