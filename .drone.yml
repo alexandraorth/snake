@@ -1,3 +1,4 @@
+
 kind: pipeline
 name: default
 
@@ -6,4 +7,4 @@ steps:
   image: rust:1.31
   commands:
   - cargo build
-  - cargo test 
+  - cargo test
